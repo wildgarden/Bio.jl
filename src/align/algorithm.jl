@@ -1,16 +1,18 @@
 # matrix used for dynamic programming
-type AlignmentMatrix{T<:Real}
+type AlignmentMatrix{T<:Real} <: AbstractMatrix{T}
     nrows::Int
     ncols::Int
     matrix::Matrix{T}
-    function AlignmentMatrix{T}(::Type{T}, nrows, ncols)
-        new(nrows, ncols, Array{T}(nrows + 1, ncols + 1))
+    function AlignmentMatrix{T}(::Type{T}, nrows::Integer, ncols::Integer)
+        resize!(new(), nrows, ncols)
     end
 end
 
 # index is 0-based
 getindex(m::AlignmentMatrix, i::Integer, j::Integer) = m.matrix[i+1,j+1]
 setindex!(m::AlignmentMatrix, x, i::Integer, j::Integer) = m.matrix[i+1,j+1] = x
+
+size(m::AlignmentMatrix) = (m.nrows, m.ncols)
 
 function size(m::AlignmentMatrix, d::Integer)
     if d == 1
@@ -21,11 +23,32 @@ function size(m::AlignmentMatrix, d::Integer)
     return 1
 end
 
-function fill_matrix!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel)
+function resize!{T}(mtx::AlignmentMatrix{T}, nrows::Integer, ncols::Integer)
+    mtx.matrix = Array{T}(nrows + 1, ncols + 1)
+    mtx.nrows = nrows
+    mtx.ncols = ncols
+    mtx
+end
+
+function fitsize!(mtx::AlignmentMatrix, a, b)
     m = length(a)
     n = length(b)
-    @assert m ≤ size(mtx, 1)
-    @assert n ≤ size(mtx, 2)
+    if mtx.nrows < m || mtx.ncols < n
+        resize!(mtx, m, n)
+    end
+    mtx.nrows = m
+    mtx.ncols = n
+    return mtx
+end
+
+function empty!{T}(mtx::AlignmentMatrix{T})
+    resize!(mtx, 0, 0)
+end
+
+function fill_matrix!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel)
+    fitsize!(mtx, a, b)
+    m = length(a)
+    n = length(b)
     mtx[0,0] = 0
     for i in 1:m
         mtx[i,0] = mtx[i-1,0] + cost[a[i],GAP]
@@ -47,7 +70,9 @@ end
 
 immutable AbberationError <: Exception; end
 
+# fill cells within the "diagonal zone"
 function fill_matrix!{T}(mtx::AlignmentMatrix{T}, a, b, t::T, cost::AbstractCostModel)
+    fitsize!(mtx, a, b)
     m = length(a)
     n = length(b)
     # TODO: remove this restriction

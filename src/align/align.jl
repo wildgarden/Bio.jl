@@ -1,8 +1,11 @@
 module Align
 
-export distance, distance2
+export
+    distance, distance!, distance2, distance2!,
+    AlignmentMatrix,
+    UnitCost
 
-import Base: getindex, setindex!, size
+import Base: getindex, setindex!, size, resize!, empty!
 
 using Bio.Seq
 

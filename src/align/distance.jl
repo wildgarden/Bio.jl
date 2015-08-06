@@ -1,15 +1,23 @@
-function distance(a, b, cost::AbstractCostModel=UnitCost)
-    m = length(a)
-    n = length(b)
-    mtx = AlignmentMatrix{Int}(Int, m, n)
-    fill_matrix!(mtx, a, b, cost)
-    return mtx[m,n]
+const default_cost = UnitCost
+
+function distance(a, b, cost::AbstractCostModel=default_cost)
+    mtx = AlignmentMatrix{Int}(Int, length(a), length(b))
+    distance!(mtx, a, b, cost)
+    return mtx[end,end]
 end
 
-function distance2(a, b, cost::AbstractCostModel=UnitCost)
-    m = length(a)
-    n = length(b)
-    mtx = AlignmentMatrix{Int}(Int, m, n)
+function distance!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel=default_cost)
+    fill_matrix!(mtx, a, b, cost)
+    return mtx[end,end]
+end
+
+function distance2(a, b, cost::AbstractCostModel=default_cost)
+    mtx = AlignmentMatrix{Int}(Int, length(a), length(b))
+    distance2!(mtx)
+    return mtx[end,end]
+end
+
+function distance2!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel=default_cost)
     t = 1
     while true
         try
@@ -23,5 +31,5 @@ function distance2(a, b, cost::AbstractCostModel=UnitCost)
         end
         break
     end
-    return mtx[m,n]
+    return mtx[end,end]
 end

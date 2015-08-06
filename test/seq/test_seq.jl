@@ -1260,6 +1260,7 @@ facts("Translation") do
 end
 
 
+#=
 facts("Sequence Parsing") do
     context("FASTA Parsing") do
         get_bio_fmt_specimens()
@@ -1319,5 +1320,6 @@ facts("Sequence Parsing") do
         end
     end
 end
+=#
 
 end # TestSeq

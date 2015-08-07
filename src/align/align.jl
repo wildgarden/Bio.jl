@@ -13,7 +13,6 @@ import Base: getindex, setindex!, size, resize!, empty!
 using Bio.Seq
 
 include("model.jl")
-include("algorithm.jl")
-include("distance.jl")
+include("pairwise.jl")
 
 end

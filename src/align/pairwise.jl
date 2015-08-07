@@ -47,6 +47,8 @@ function empty!{T}(mtx::AlignmentMatrix{T})
     resize!(mtx, 0, 0)
 end
 
+# algorithms
+
 abstract PairwiseAlignmentAlgorithm
 
 immutable NaiveDP <: PairwiseAlignmentAlgorithm; end
@@ -123,6 +125,90 @@ function fill_matrix!{T}(mtx::AlignmentMatrix{T}, a, b, t::T, cost::AbstractCost
     end
     return mtx
 end
+
+type Alignment
+    len::Int
+    data::Vector{UInt8}
+end
+
+Alignment() = Alignment(0, UInt8[])
+
+const Mat = 0x00
+const Ins = 0x01
+const Del = 0x02
+
+const code_char = ['M', 'I', 'D']
+
+function show(io::IO, aln::Alignment)
+    println(io, "Alignment")
+    print(' ')
+    for i in 1:endof(aln)
+        op = aln[i]
+        if op & 0x80 != 0
+            @assert op == (Mat | 0x80)
+            print(io, "M̂")
+        else
+            print(io, code_char[op+1])
+        end
+    end
+end
+
+length(aln::Alignment) = aln.len
+endof(aln::Alignment) = aln.len
+
+getindex(aln::Alignment, i::Integer) = aln.data[i]
+
+function push!(aln::Alignment, op)
+    if aln.len + 1 > length(aln.data)
+        resize!(aln.data, aln.len + 1)
+    end
+    aln.data[aln.len+=1] = op
+    aln
+end
+
+function reverse!(aln::Alignment)
+    reverse!(aln.data, 1, aln.len)
+    aln
+end
+
+function reset!(aln::Alignment)
+    aln.len = 0
+    aln
+end
+
+function traceback!(aln::Alignment, mtx::AlignmentMatrix, a, b, cost::AbstractCostModel)
+    i, j = size(mtx)
+    reset!(aln)
+    while i > 0 || j > 0
+        if i ≥ 1 && j ≥ 1 && mtx[i,j] == mtx[i-1,j-1] + cost[a[i],b[j]]
+            push!(aln, Mat | (a[i] == b[j] ? 0x00 : 0x80))
+            i -= 1
+            j -= 1
+        elseif i ≥ 1 && mtx[i,j] == mtx[i-1,j] + cost[a[i],GAP]
+            push!(aln, Del)
+            i -= 1
+        elseif j ≥ 1 && mtx[i,j] == mtx[i,j-1] + cost[GAP,b[j]]
+            push!(aln, Ins)
+            j -= 1
+        else
+            @assert false
+        end
+    end
+    reverse!(aln)
+    return aln
+end
+
+function traceback(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel)
+    aln = Alignment()
+    traceback!(aln, mtx, a, b, cost)
+end
+
+function align(a, b, cost::AbstractCostModel=UnitCost)
+    mtx = AlignmentMatrix{Int}(length(a), length(b))
+    fill_matrix!(mtx, a, b, cost, NaiveDP)
+    traceback(mtx, a, b, cost)
+end
+
 
 # `a` and `b` are something like a sequence
 function distance{A<:PairwiseAlignmentAlgorithm}(a, b, cost::AbstractCostModel=UnitCost, alg::Type{A}=NaiveDP)

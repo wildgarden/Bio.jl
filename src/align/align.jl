@@ -2,13 +2,24 @@ module Align
 
 export
     distance, distance!,
+    align,
     AlignmentMatrix,
     UnitCost,
     # algorithms
     NaiveDP,
     ShortDetourDP
 
-import Base: getindex, setindex!, size, resize!, empty!
+import Base:
+    getindex,
+    setindex!,
+    size,
+    resize!,
+    empty!,
+    reverse!,
+    push!,
+    length,
+    endof,
+    show
 
 using Bio.Seq
 

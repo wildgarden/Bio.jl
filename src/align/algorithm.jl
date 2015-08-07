@@ -8,6 +8,8 @@ type AlignmentMatrix{T<:Real} <: AbstractMatrix{T}
     end
 end
 
+call{T}(::Type{AlignmentMatrix{T}}, nrows::Integer, ncols::Integer) = AlignmentMatrix{T}(T, nrows, ncols)
+
 # index is 0-based
 getindex(m::AlignmentMatrix, i::Integer, j::Integer) = m.matrix[i+1,j+1]
 setindex!(m::AlignmentMatrix, x, i::Integer, j::Integer) = m.matrix[i+1,j+1] = x
@@ -45,7 +47,11 @@ function empty!{T}(mtx::AlignmentMatrix{T})
     resize!(mtx, 0, 0)
 end
 
-function fill_matrix!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel)
+abstract AlignmentAlgorithm
+
+immutable NaiveDP <: AlignmentAlgorithm; end
+
+function fill_matrix!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel, ::Type{NaiveDP})
     fitsize!(mtx, a, b)
     m = length(a)
     n = length(b)
@@ -68,10 +74,12 @@ function fill_matrix!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel)
     return mtx
 end
 
+immutable ShortDetourDP <: AlignmentAlgorithm; end
+
 immutable AbberationError <: Exception; end
 
 # fill cells within the "diagonal zone"
-function fill_matrix!{T}(mtx::AlignmentMatrix{T}, a, b, t::T, cost::AbstractCostModel)
+function fill_matrix!{T}(mtx::AlignmentMatrix{T}, a, b, t::T, cost::AbstractCostModel, ::Type{ShortDetourDP})
     fitsize!(mtx, a, b)
     m = length(a)
     n = length(b)

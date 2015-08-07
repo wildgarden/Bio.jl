@@ -1,27 +1,23 @@
-const default_cost = UnitCost
+# `a` and `b` are something like a sequence
+function distance{A<:AlignmentAlgorithm}(a, b, cost::AbstractCostModel=UnitCost, alg::Type{A}=NaiveDP)
+    return distance(a, b, cost, alg)
+end
 
-function distance(a, b, cost::AbstractCostModel=default_cost)
-    mtx = AlignmentMatrix{Int}(Int, length(a), length(b))
-    distance!(mtx, a, b, cost)
+function distance{A<:AlignmentAlgorithm}(a, b, cost::AbstractCostModel, ::Type{A})
+    mtx = AlignmentMatrix{Int}(length(a), length(b))
+    return distance!(mtx, a, b, cost, A)
+end
+
+function distance!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel, ::Type{NaiveDP})
+    fill_matrix!(mtx, a, b, cost, NaiveDP)
     return mtx[end,end]
 end
 
-function distance!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel=default_cost)
-    fill_matrix!(mtx, a, b, cost)
-    return mtx[end,end]
-end
-
-function distance2(a, b, cost::AbstractCostModel=default_cost)
-    mtx = AlignmentMatrix{Int}(Int, length(a), length(b))
-    distance2!(mtx)
-    return mtx[end,end]
-end
-
-function distance2!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel=default_cost)
+function distance!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel, ::Type{ShortDetourDP})
     t = 1
     while true
         try
-            fill_matrix!(mtx, a, b, t, cost)
+            fill_matrix!(mtx, a, b, t, cost, ShortDetourDP)
         catch ex
             if isa(ex, AbberationError)
                 t *= 2

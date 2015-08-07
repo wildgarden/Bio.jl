@@ -1,9 +1,12 @@
 module Align
 
 export
-    distance, distance!, distance2, distance2!,
+    distance, distance!,
     AlignmentMatrix,
-    UnitCost
+    UnitCost,
+    # algorithms
+    NaiveDP,
+    ShortDetourDP
 
 import Base: getindex, setindex!, size, resize!, empty!
 

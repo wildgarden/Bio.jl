@@ -47,9 +47,9 @@ function empty!{T}(mtx::AlignmentMatrix{T})
     resize!(mtx, 0, 0)
 end
 
-abstract AlignmentAlgorithm
+abstract PairwiseAlignmentAlgorithm
 
-immutable NaiveDP <: AlignmentAlgorithm; end
+immutable NaiveDP <: PairwiseAlignmentAlgorithm; end
 
 function fill_matrix!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel, ::Type{NaiveDP})
     fitsize!(mtx, a, b)
@@ -74,7 +74,7 @@ function fill_matrix!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel, ::Typ
     return mtx
 end
 
-immutable ShortDetourDP <: AlignmentAlgorithm; end
+immutable ShortDetourDP <: PairwiseAlignmentAlgorithm; end
 
 immutable AbberationError <: Exception; end
 
@@ -125,11 +125,11 @@ function fill_matrix!{T}(mtx::AlignmentMatrix{T}, a, b, t::T, cost::AbstractCost
 end
 
 # `a` and `b` are something like a sequence
-function distance{A<:AlignmentAlgorithm}(a, b, cost::AbstractCostModel=UnitCost, alg::Type{A}=NaiveDP)
+function distance{A<:PairwiseAlignmentAlgorithm}(a, b, cost::AbstractCostModel=UnitCost, alg::Type{A}=NaiveDP)
     return distance(a, b, cost, alg)
 end
 
-function distance{A<:AlignmentAlgorithm}(a, b, cost::AbstractCostModel, ::Type{A})
+function distance{A<:PairwiseAlignmentAlgorithm}(a, b, cost::AbstractCostModel, ::Type{A})
     mtx = AlignmentMatrix{Int}(length(a), length(b))
     return distance!(mtx, a, b, cost, A)
 end

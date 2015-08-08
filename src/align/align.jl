@@ -5,7 +5,9 @@ export
     align,
     AlignmentMatrix,
     AlignmentVector,
+    GAP,
     UnitCost,
+    CostModel,
     # algorithms
     NaiveDP,
     ShortDetourDP

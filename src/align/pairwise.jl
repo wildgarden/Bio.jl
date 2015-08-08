@@ -32,9 +32,7 @@ function resize!{T}(mtx::AlignmentMatrix{T}, nrows::Integer, ncols::Integer)
     mtx
 end
 
-function fitsize!(mtx::AlignmentMatrix, a, b)
-    m = length(a)
-    n = length(b)
+function fitsize!(mtx::AlignmentMatrix, m, n)
     if mtx.nrows < m || mtx.ncols < n
         resize!(mtx, m, n)
     end
@@ -47,29 +45,37 @@ function empty!{T}(mtx::AlignmentMatrix{T})
     resize!(mtx, 0, 0)
 end
 
-# algorithms
+# global algorithms
+
+# Conventions of variables:
+#   a: sequence A
+#   b: sequence B
+#   m: aligned length of sequence A
+#   n: aligned length of sequence B
+#   p: start position of sequence A
+#   q: start position of sequence B
+# This means a[p:p+m-1] and b[q:q+n-1] are aligned to each other.
 
 abstract PairwiseAlignmentAlgorithm
 
+# Needleman-Wunsch
 immutable NaiveDP <: PairwiseAlignmentAlgorithm; end
 
-function fill_matrix!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel, ::Type{NaiveDP})
-    fitsize!(mtx, a, b)
-    m = length(a)
-    n = length(b)
+function fill_matrix!(mtx::AlignmentMatrix, a, p::Int, m::Int, b, q::Int, n::Int, cost::AbstractCostModel, ::Type{NaiveDP})
+    fitsize!(mtx, m, n)
     mtx[0,0] = 0
     for i in 1:m
-        mtx[i,0] = mtx[i-1,0] + cost[a[i],GAP]
+        mtx[i,0] = mtx[i-1,0] + cost[a[i+p-1],GAP]
     end
     for j in 1:n
-        mtx[0,j] = mtx[0,j-1] + cost[GAP,b[j]]
+        mtx[0,j] = mtx[0,j-1] + cost[GAP,b[j+q-1]]
     end
     for j in 1:n
         for i in 1:m
             mtx[i,j] = min(
-                mtx[i-1,j-1] + cost[a[i],b[j]],
-                mtx[i-1,j  ] + cost[a[i],GAP ],
-                mtx[i,  j-1] + cost[GAP, b[j]]
+                mtx[i-1,j-1] + cost[a[i+p-1],b[j+q-1]],
+                mtx[i-1,j  ] + cost[a[i+p-1],GAP     ],
+                mtx[i,  j-1] + cost[GAP,     b[j+q-1]]
             )
         end
     end
@@ -81,10 +87,8 @@ immutable ShortDetourDP <: PairwiseAlignmentAlgorithm; end
 immutable AbberationError <: Exception; end
 
 # fill cells within the "diagonal zone"
-function fill_matrix!{T}(mtx::AlignmentMatrix{T}, a, b, t::T, cost::AbstractCostModel, ::Type{ShortDetourDP})
-    fitsize!(mtx, a, b)
-    m = length(a)
-    n = length(b)
+function fill_matrix!{T}(mtx::AlignmentMatrix{T}, a, p::Int, m::Int, b, q::Int, n::Int, t::T, cost::AbstractCostModel, ::Type{ShortDetourDP})
+    fitsize!(mtx, m, n)
     # TODO: remove this restriction
     @assert m ≤ n
     d = n - m
@@ -96,22 +100,22 @@ function fill_matrix!{T}(mtx::AlignmentMatrix{T}, a, b, t::T, cost::AbstractCost
     # the diagonal zone is [-x..n-m+x], where x = ceil(t/(2Δ) - (n - m)/2)
     x = ceil(Int, t / (2Δ) - d / 2)
     for i in 1:x
-        mtx[i,0] = mtx[i-1,0] + cost[a[i],GAP]
+        mtx[i,0] = mtx[i-1,0] + cost[a[i+p-1],GAP]
     end
     for j in 1:d+x
-        mtx[0,j] = mtx[0,j-1] + cost[GAP,b[j]]
+        mtx[0,j] = mtx[0,j-1] + cost[GAP,b[j+q-1]]
     end
     for j in 1:n
         l = max(1, j - (d + x))
         u = min(j + x, m)
         min_cost = typemax(T)
         for i in l:u
-            c = mtx[i-1,j-1] + cost[a[i],b[j]]
+            c = mtx[i-1,j-1] + cost[a[i+p-1],b[j+q-1]]
             if i != l
-                c = min(c, mtx[i-1,j] + cost[a[i],GAP])
+                c = min(c, mtx[i-1,j] + cost[a[i+p-1],GAP])
             end
             if i != u
-                c = min(c, mtx[i,j-1] + cost[GAP,b[j]])
+                c = min(c, mtx[i,j-1] + cost[GAP,b[j+q-1]])
             end
             min_cost = min(min_cost, c)
             mtx[i,j] = c
@@ -204,8 +208,10 @@ function traceback(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel)
 end
 
 function align(a, b, cost::AbstractCostModel=UnitCost)
-    mtx = AlignmentMatrix{Int}(length(a), length(b))
-    fill_matrix!(mtx, a, b, cost, NaiveDP)
+    m = length(a)
+    n = length(b)
+    mtx = AlignmentMatrix{Int}(m, n)
+    fill_matrix!(mtx, a, 1, m, b, 1, n, cost, NaiveDP)
     traceback(mtx, a, b, cost)
 end
 
@@ -221,15 +227,19 @@ function distance{A<:PairwiseAlignmentAlgorithm}(a, b, cost::AbstractCostModel, 
 end
 
 function distance!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel, ::Type{NaiveDP})
-    fill_matrix!(mtx, a, b, cost, NaiveDP)
+    m = length(a)
+    n = length(b)
+    fill_matrix!(mtx, a, 1, m, b, 1, n, cost, NaiveDP)
     return mtx[end,end]
 end
 
 function distance!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel, ::Type{ShortDetourDP})
+    m = length(a)
+    n = length(b)
     t = 1
     while true
         try
-            fill_matrix!(mtx, a, b, t, cost, ShortDetourDP)
+            fill_matrix!(mtx, a, 1, m, b, 1, n, t, cost, ShortDetourDP)
         catch ex
             if isa(ex, AbberationError)
                 t *= 2

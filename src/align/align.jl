@@ -1,13 +1,15 @@
 module Align
 
 export
-    distance, distance!,
     align,
     AlignmentMatrix,
     AlignmentVector,
     GAP,
+    distance, distance!,
     UnitCost,
     CostModel,
+    score, score!,
+    UnitScore,
     # algorithms
     NaiveDP,
     ShortDetourDP

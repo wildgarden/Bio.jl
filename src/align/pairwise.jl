@@ -123,6 +123,27 @@ function fill_matrix!(mtx::AlignmentMatrix, a, p::Int, m::Int, b, q::Int, n::Int
     return mtx
 end
 
+function fill_matrix!(mtx::AlignmentMatrix, a, p::Int, m::Int, b, q::Int, n::Int, score::AbstractScoreModel, ::Type{NaiveDP})
+    fitsize!(mtx, m, n)
+    mtx[0,0] = 0
+    for i in 1:m
+        mtx[i,0] = mtx[i-1,0] + score[a[i+p-1],GAP]
+    end
+    for j in 1:n
+        mtx[0,j] = mtx[0,j-1] + score[GAP,b[j+q-1]]
+    end
+    for j in 1:n
+        for i in 1:m
+            mtx[i,j] = max(
+                mtx[i-1,j-1] + score[a[i+p-1],b[j+q-1]],
+                mtx[i-1,j  ] + score[a[i+p-1],GAP     ],
+                mtx[i,  j-1] + score[GAP,     b[j+q-1]]
+            )
+        end
+    end
+    return mtx
+end
+
 function fill_vector!(vec::AlignmentVector, a, p::Int, m::Int, b, q::Int, n::Int, cost::AbstractCostModel, ::Type{NaiveDP})
     @assert m ≤ n
     fitsize!(vec, m)
@@ -282,13 +303,15 @@ end
 
 # `a` and `b` are something like a sequence
 function distance{A<:PairwiseAlignmentAlgorithm}(a, b, cost::AbstractCostModel=UnitCost, alg::Type{A}=NaiveDP)
-    return distance(a, b, cost, alg)
-end
-
-function distance{A<:PairwiseAlignmentAlgorithm}(a, b, cost::AbstractCostModel, ::Type{A})
     mtx = AlignmentMatrix{Int}(length(a), length(b))
     return distance!(mtx, a, b, cost, A)
+    #return distance(a, b, cost, alg)
 end
+
+#function distance{A<:PairwiseAlignmentAlgorithm}(a, b, cost::AbstractCostModel, ::Type{A})
+#    mtx = AlignmentMatrix{Int}(length(a), length(b))
+#    return distance!(mtx, a, b, cost, A)
+#end
 
 function distance!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel, ::Type{NaiveDP})
     m = length(a)
@@ -320,5 +343,18 @@ function distance!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel, ::Type{S
         end
         break
     end
+    return mtx[end,end]
+end
+
+
+function score{A<:PairwiseAlignmentAlgorithm}(a, b, score::AbstractScoreModel=UnitScore, alg::Type{A}=NaiveDP)
+    mtx = AlignmentMatrix{Int}(length(a), length(b))
+    return score!(mtx, a, b, score, A)
+end
+
+function score!(mtx::AlignmentMatrix, a, b, score::AbstractScoreModel, ::Type{NaiveDP})
+    m = length(a)
+    n = length(b)
+    fill_matrix!(mtx, a, 1, m, b, 1, n, score, NaiveDP)
     return mtx[end,end]
 end

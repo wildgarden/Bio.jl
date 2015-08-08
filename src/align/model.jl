@@ -48,4 +48,29 @@ setindex!{T}(m::CostModel{T}, c::Int, x::T,         y::T        ) = m.cost[conve
 # score model is a maximizing problem
 abstract AbstractScoreModel <: AlignmentModel
 
+immutable UnitScoreModel <: AbstractScoreModel; end
+const UnitScore = UnitScoreModel()
+
+getindex(::UnitScoreModel,  ::Character,  ::Type{GAP}) = -1
+getindex(::UnitScoreModel,  ::Type{GAP},  ::Character) = -1
+getindex(::UnitScoreModel, x::Character, y::Character) = ifelse(x === y, 1, 0)
+
+type ScoreModel{T<:Character} <: AbstractScoreModel
+    score::Matrix{Int}
+    char2gap::Int
+    gap2char::Int
+    function ScoreModel(alphabetsize)
+        new(zeros(Int, alphabetsize, alphabetsize), 0, 0)
+    end
+end
+
+getindex{T}(m::ScoreModel{T},  ::T,           ::Type{GAP}) = m.char2gap
+getindex{T}(m::ScoreModel{T},  ::Type{GAP},  ::T         ) = m.gap2char
+getindex{T}(m::ScoreModel{T}, x::T,         y::T         ) = m.score[convert(UInt8,x)+1,convert(UInt8,y)+1]
+
+setindex!{T}(m::ScoreModel{T}, c::Int,  ::Type{GAP}              ) = m.char2gap = m.gap2char = c
+setindex!{T}(m::ScoreModel{T}, c::Int,  ::T,          ::Type{GAP}) = m.char2gap = c
+setindex!{T}(m::ScoreModel{T}, c::Int,  ::Type{GAP},  ::T        ) = m.gap2char = c
+setindex!{T}(m::ScoreModel{T}, c::Int, x::T,         y::T        ) = m.score[convert(UInt8,x)+1,convert(UInt8,y)+1] = c
+
 # PAM, BLOSUM, etc.

@@ -4,6 +4,7 @@ export
     distance, distance!,
     align,
     AlignmentMatrix,
+    AlignmentVector,
     UnitCost,
     # algorithms
     NaiveDP,

@@ -1,4 +1,5 @@
 # matrix used for dynamic programming
+# O(m*n) space
 type AlignmentMatrix{T<:Real} <: AbstractMatrix{T}
     nrows::Int
     ncols::Int
@@ -45,6 +46,46 @@ function empty!{T}(mtx::AlignmentMatrix{T})
     resize!(mtx, 0, 0)
 end
 
+# O(min(m,n)) space
+type AlignmentVector{T<:Real} <: AbstractVector{T}
+    nrows::Int
+    vector::Vector{T}
+    function AlignmentVector{T}(::Type{T}, nrows::Integer)
+        resize!(new(), nrows)
+    end
+end
+
+call{T}(::Type{AlignmentVector{T}}, nrows::Integer) = AlignmentVector{T}(T, nrows)
+
+getindex(v::AlignmentVector, i::Integer) = v.vector[i+1]
+setindex!(v::AlignmentVector, x, i::Integer) = v.vector[i+1] = x
+
+length(v::AlignmentVector) = v.nrows
+
+function resize!{T}(v::AlignmentVector{T}, m)
+    if isdefined(v, :vector)
+        resize!(v.vector, m + 1)
+    else
+        v.vector = Vector{T}(m + 1)
+    end
+    v.nrows = m
+    v
+end
+
+function fitsize!(v::AlignmentVector, m)
+    if v.nrows ≥ m
+        v.nrows = m
+    else
+        resize!(v, m)
+    end
+    return v
+end
+
+function empty!(v::AlignmentMatrix)
+    resize!(v, 0)
+end
+
+
 # global algorithms
 
 # Conventions of variables:
@@ -80,6 +121,29 @@ function fill_matrix!(mtx::AlignmentMatrix, a, p::Int, m::Int, b, q::Int, n::Int
         end
     end
     return mtx
+end
+
+function fill_vector!(vec::AlignmentVector, a, p::Int, m::Int, b, q::Int, n::Int, cost::AbstractCostModel, ::Type{NaiveDP})
+    @assert m ≤ n
+    fitsize!(vec, m)
+    vec[0] = 0
+    for i in 1:m
+        vec[i] = vec[i-1] + cost[a[i+p-1],GAP]
+    end
+    for j in 1:n
+        diag = vec[0]
+        vec[0] += cost[GAP,b[j+q-1]]
+        for i in 1:m
+            tmp = vec[i]
+            vec[i] = min(
+                diag     + cost[a[i+p-1],b[j+q-1]],
+                vec[i-1] + cost[a[i+p-1],GAP     ],
+                vec[i  ] + cost[GAP,     b[j+q-1]]
+            )
+            diag = tmp
+        end
+    end
+    return vec
 end
 
 immutable ShortDetourDP <: PairwiseAlignmentAlgorithm; end
@@ -231,6 +295,13 @@ function distance!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel, ::Type{N
     n = length(b)
     fill_matrix!(mtx, a, 1, m, b, 1, n, cost, NaiveDP)
     return mtx[end,end]
+end
+
+function distance!(vec::AlignmentVector, a, b, cost::AbstractCostModel, ::Type{NaiveDP})
+    m = length(a)
+    n = length(b)
+    fill_vector!(vec, a, 1, m, b, 1, n, cost, NaiveDP)
+    return vec[end]
 end
 
 function distance!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel, ::Type{ShortDetourDP})

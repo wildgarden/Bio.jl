@@ -102,7 +102,7 @@ abstract PairwiseAlignmentAlgorithm
 # Needleman-Wunsch
 immutable NaiveDP <: PairwiseAlignmentAlgorithm; end
 
-function fill_matrix!(mtx::AlignmentMatrix, a, p::Int, m::Int, b, q::Int, n::Int, cost::AbstractCostModel, ::Type{NaiveDP})
+function rundp!(mtx::AlignmentMatrix, a, p::Int, m::Int, b, q::Int, n::Int, cost::AbstractCostModel, ::Type{NaiveDP})
     fitsize!(mtx, m, n)
     mtx[0,0] = 0
     for i in 1:m
@@ -123,7 +123,7 @@ function fill_matrix!(mtx::AlignmentMatrix, a, p::Int, m::Int, b, q::Int, n::Int
     return mtx
 end
 
-function fill_matrix!(mtx::AlignmentMatrix, a, p::Int, m::Int, b, q::Int, n::Int, score::AbstractScoreModel, ::Type{NaiveDP})
+function rundp!(mtx::AlignmentMatrix, a, p::Int, m::Int, b, q::Int, n::Int, score::AbstractScoreModel, ::Type{NaiveDP})
     fitsize!(mtx, m, n)
     mtx[0,0] = 0
     for i in 1:m
@@ -144,7 +144,7 @@ function fill_matrix!(mtx::AlignmentMatrix, a, p::Int, m::Int, b, q::Int, n::Int
     return mtx
 end
 
-function fill_vector!(vec::AlignmentVector, a, p::Int, m::Int, b, q::Int, n::Int, cost::AbstractCostModel, ::Type{NaiveDP})
+function rundp!(vec::AlignmentVector, a, p::Int, m::Int, b, q::Int, n::Int, cost::AbstractCostModel, ::Type{NaiveDP})
     @assert m ≤ n
     fitsize!(vec, m)
     vec[0] = 0
@@ -172,7 +172,7 @@ immutable ShortDetourDP <: PairwiseAlignmentAlgorithm; end
 immutable AbberationError <: Exception; end
 
 # fill cells within the "diagonal zone"
-function fill_matrix!{T}(mtx::AlignmentMatrix{T}, a, p::Int, m::Int, b, q::Int, n::Int, t::T, cost::AbstractCostModel, ::Type{ShortDetourDP})
+function rundp!{T}(mtx::AlignmentMatrix{T}, a, p::Int, m::Int, b, q::Int, n::Int, t::T, cost::AbstractCostModel, ::Type{ShortDetourDP})
     fitsize!(mtx, m, n)
     # TODO: remove this restriction
     @assert m ≤ n
@@ -296,7 +296,7 @@ function align(a, b, cost::AbstractCostModel=UnitCost)
     m = length(a)
     n = length(b)
     mtx = AlignmentMatrix{Int}(m, n)
-    fill_matrix!(mtx, a, 1, m, b, 1, n, cost, NaiveDP)
+    rundp!(mtx, a, 1, m, b, 1, n, cost, NaiveDP)
     traceback(mtx, a, b, cost)
 end
 
@@ -316,14 +316,14 @@ end
 function distance!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel, ::Type{NaiveDP})
     m = length(a)
     n = length(b)
-    fill_matrix!(mtx, a, 1, m, b, 1, n, cost, NaiveDP)
+    rundp!(mtx, a, 1, m, b, 1, n, cost, NaiveDP)
     return mtx[end,end]
 end
 
 function distance!(vec::AlignmentVector, a, b, cost::AbstractCostModel, ::Type{NaiveDP})
     m = length(a)
     n = length(b)
-    fill_vector!(vec, a, 1, m, b, 1, n, cost, NaiveDP)
+    rundp!(vec, a, 1, m, b, 1, n, cost, NaiveDP)
     return vec[end]
 end
 
@@ -333,7 +333,7 @@ function distance!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel, ::Type{S
     t = 1
     while true
         try
-            fill_matrix!(mtx, a, 1, m, b, 1, n, t, cost, ShortDetourDP)
+            rundp!(mtx, a, 1, m, b, 1, n, t, cost, ShortDetourDP)
         catch ex
             if isa(ex, AbberationError)
                 t *= 2
@@ -355,6 +355,6 @@ end
 function score!(mtx::AlignmentMatrix, a, b, score::AbstractScoreModel, ::Type{NaiveDP})
     m = length(a)
     n = length(b)
-    fill_matrix!(mtx, a, 1, m, b, 1, n, score, NaiveDP)
+    rundp!(mtx, a, 1, m, b, 1, n, score, NaiveDP)
     return mtx[end,end]
 end

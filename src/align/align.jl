@@ -11,7 +11,8 @@ export
     # algorithms
     NeedlemanWunsch,
     ShortDetour,
-    SmithWaterman
+    SmithWaterman,
+    SemiGlobal
 
 import Base:
     getindex,

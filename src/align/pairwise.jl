@@ -1,3 +1,11 @@
+# TODO
+# * semi-local alignment
+# * space-efficient optimal alignment (Hirschberg's algorithm ?)
+# * bit-parallel algorithm (BitPAI doi: 10.1093/bioinformatics/btu507 ?)
+# * sparse DP
+# * clean interface
+# * debug & tests
+
 # matrix used for dynamic programming
 # O(m*n) space
 type AlignmentMatrix{T<:Real} <: AbstractMatrix{T}

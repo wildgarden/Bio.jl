@@ -167,6 +167,34 @@ function rundp!(vec::AlignmentVector, a, p::Int, m::Int, b, q::Int, n::Int, cost
     return vec
 end
 
+# Smith-Waterman algorithm
+function rundp_local!(mtx::AlignmentMatrix, a, p::Int, m::Int, b, q::Int, n::Int, score::AbstractScoreModel, ::Type{NaiveDP})
+    fitsize!(mtx, m, n)
+    mtx[0,0] = 0
+    max_score = mtx[0,0]
+    max_score_loc = (0, 0)
+    # assuming the GAP score is non-positiev
+    for i in 1:m
+        mtx[i,0] = 0
+    end
+    for j in 1:n
+        mtx[0,j] = 0
+        for i in 1:m
+            mtx[i,j] = max(
+                0,
+                mtx[i-1,j-1] + score[a[i+p-1],b[j+q-1]],
+                mtx[i-1,j  ] + score[a[i+p-1],GAP     ],
+                mtx[i,  j-1] + score[GAP,     b[j+q-1]]
+            )
+            if mtx[i,j] > max_score
+                max_score = mtx[i,j]
+                max_score_loc = (i, j)
+            end
+        end
+    end
+    return mtx, max_score, max_score_loc
+end
+
 immutable ShortDetourDP <: PairwiseAlignmentAlgorithm; end
 
 immutable AbberationError <: Exception; end
@@ -308,11 +336,6 @@ function distance{A<:PairwiseAlignmentAlgorithm}(a, b, cost::AbstractCostModel=U
     #return distance(a, b, cost, alg)
 end
 
-#function distance{A<:PairwiseAlignmentAlgorithm}(a, b, cost::AbstractCostModel, ::Type{A})
-#    mtx = AlignmentMatrix{Int}(length(a), length(b))
-#    return distance!(mtx, a, b, cost, A)
-#end
-
 function distance!(mtx::AlignmentMatrix, a, b, cost::AbstractCostModel, ::Type{NaiveDP})
     m = length(a)
     n = length(b)
@@ -357,4 +380,16 @@ function score!(mtx::AlignmentMatrix, a, b, score::AbstractScoreModel, ::Type{Na
     n = length(b)
     rundp!(mtx, a, 1, m, b, 1, n, score, NaiveDP)
     return mtx[end,end]
+end
+
+function score_local{A<:PairwiseAlignmentAlgorithm}(a, b, score::AbstractScoreModel=UnitScore, alg::Type{A}=NaiveDP)
+    mtx = AlignmentMatrix{Int}(length(a), length(b))
+    return score_local!(mtx, a, b, score, A)
+end
+
+function score_local!(mtx::AlignmentMatrix, a, b, score::AbstractScoreModel, ::Type{NaiveDP})
+    m = length(a)
+    n = length(b)
+    _, max_score, _ = rundp_local!(mtx, a, 1, m, b, 1, n, score, NaiveDP)
+    return max_score
 end

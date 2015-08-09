@@ -9,6 +9,7 @@ export
     UnitCost,
     CostModel,
     score, score!,
+    score_local, score_local!,
     UnitScore,
     # algorithms
     NaiveDP,

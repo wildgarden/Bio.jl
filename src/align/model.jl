@@ -1,35 +1,35 @@
 abstract AlignmentModel
 
 # cost model is about a minimizing problem
-abstract AbstractCostModel <: AlignmentModel
+abstract AbstractCostModel{T<:Real} <: AlignmentModel
 
 # gap character: -
 immutable GAP; end
 typealias Character Union{Char,Nucleotide,AminoAcid}
 
 # a gap and a mismatch costs 1; otherwise 0
-immutable UnitCostModel <: AbstractCostModel; end
-const UnitCost = UnitCostModel()
+immutable UnitCostModel{T} <: AbstractCostModel{T}; end
+const UnitCost = UnitCostModel{Int}()
 
-getindex(::UnitCostModel,  ::Character,  ::Type{GAP}) = 1
-getindex(::UnitCostModel,  ::Type{GAP},  ::Character) = 1
-getindex(::UnitCostModel, x::Character, y::Character) = ifelse(x === y, 0, 1)
+getindex{T}(::UnitCostModel{T},  ::Character,  ::Type{GAP}) = T(1)
+getindex{T}(::UnitCostModel{T},  ::Type{GAP},  ::Character) = T(1)
+getindex{T}(::UnitCostModel{T}, x::Character, y::Character) = ifelse(x === y, T(0), T(1))
 
-minimum_indel_cost(::UnitCostModel) = 1
+minimum_indel_cost{T}(::UnitCostModel{T}) = T(1)
 
 # arbitrary cost model
-type CostModel{T<:Character} <: AbstractCostModel
-    cost::Matrix{Int}
-    char2gap::Int
-    gap2char::Int
+type CostModel{C<:Character,T} <: AbstractCostModel{T}
+    cost::Matrix{T}
+    char2gap::T
+    gap2char::T
     function CostModel(alphabetsize)
-        new(zeros(Int, alphabetsize, alphabetsize), 0, 0)
+        new(zeros(T, alphabetsize, alphabetsize), 0, 0)
     end
 end
 
-getindex{T}(m::CostModel{T},  ::T,          ::Type{GAP}) = m.char2gap
-getindex{T}(m::CostModel{T},  ::Type{GAP},  ::T        ) = m.gap2char
-getindex{T}(m::CostModel{T}, x::T,         y::T        ) = m.cost[convert(UInt8,x)+1,convert(UInt8,y)+1]
+getindex{C}(m::CostModel{C},  ::C,          ::Type{GAP}) = m.char2gap
+getindex{C}(m::CostModel{C},  ::Type{GAP},  ::C        ) = m.gap2char
+getindex{C}(m::CostModel{C}, x::C,         y::C        ) = m.cost[convert(UInt8,x)+1,convert(UInt8,y)+1]
 
 macro check_cost(ex)
     quote
@@ -39,38 +39,38 @@ macro check_cost(ex)
     end
 end
 
-setindex!{T}(m::CostModel{T}, c::Int,  ::Type{GAP}              ) = m.char2gap = m.gap2char = @check_cost c
-setindex!{T}(m::CostModel{T}, c::Int,  ::T,          ::Type{GAP}) = m.char2gap = @check_cost c
-setindex!{T}(m::CostModel{T}, c::Int,  ::Type{GAP},  ::T        ) = m.gap2char = @check_cost c
-setindex!{T}(m::CostModel{T}, c::Int, x::T,         y::T        ) = m.cost[convert(UInt8,x)+1,convert(UInt8,y)+1] = @check_cost c
+setindex!{C}(m::CostModel{C}, c::Real,  ::Type{GAP}              ) = m.char2gap = m.gap2char = @check_cost c
+setindex!{C}(m::CostModel{C}, c::Real,  ::C,          ::Type{GAP}) = m.char2gap = @check_cost c
+setindex!{C}(m::CostModel{C}, c::Real,  ::Type{GAP},  ::C        ) = m.gap2char = @check_cost c
+setindex!{C}(m::CostModel{C}, c::Real, x::C,         y::C        ) = m.cost[convert(UInt8,x)+1,convert(UInt8,y)+1] = @check_cost c
 
 
 # score model is a maximizing problem
-abstract AbstractScoreModel <: AlignmentModel
+abstract AbstractScoreModel{T<:Real} <: AlignmentModel
 
-immutable UnitScoreModel <: AbstractScoreModel; end
-const UnitScore = UnitScoreModel()
+immutable UnitScoreModel{T} <: AbstractScoreModel{T}; end
+const UnitScore = UnitScoreModel{Int}()
 
-getindex(::UnitScoreModel,  ::Character,  ::Type{GAP}) = -1
-getindex(::UnitScoreModel,  ::Type{GAP},  ::Character) = -1
-getindex(::UnitScoreModel, x::Character, y::Character) = ifelse(x === y, 1, 0)
+getindex{T}(::UnitScoreModel{T},  ::Character,  ::Type{GAP}) = T(-1)
+getindex{T}(::UnitScoreModel{T},  ::Type{GAP},  ::Character) = T(-1)
+getindex{T}(::UnitScoreModel{T}, x::Character, y::Character) = ifelse(x === y, T(1), T(0))
 
-type ScoreModel{T<:Character} <: AbstractScoreModel
-    score::Matrix{Int}
-    char2gap::Int
-    gap2char::Int
+type ScoreModel{C<:Character,T} <: AbstractScoreModel
+    score::Matrix{T}
+    char2gap::T
+    gap2char::T
     function ScoreModel(alphabetsize)
-        new(zeros(Int, alphabetsize, alphabetsize), 0, 0)
+        new(zeros(T, alphabetsize, alphabetsize), 0, 0)
     end
 end
 
-getindex{T}(m::ScoreModel{T},  ::T,           ::Type{GAP}) = m.char2gap
-getindex{T}(m::ScoreModel{T},  ::Type{GAP},  ::T         ) = m.gap2char
-getindex{T}(m::ScoreModel{T}, x::T,         y::T         ) = m.score[convert(UInt8,x)+1,convert(UInt8,y)+1]
+getindex{C}(m::ScoreModel{C},  ::C,           ::Type{GAP}) = m.char2gap
+getindex{C}(m::ScoreModel{C},  ::Type{GAP},  ::C         ) = m.gap2char
+getindex{C}(m::ScoreModel{C}, x::C,         y::C         ) = m.score[convert(UInt8,x)+1,convert(UInt8,y)+1]
 
-setindex!{T}(m::ScoreModel{T}, c::Int,  ::Type{GAP}              ) = m.char2gap = m.gap2char = c
-setindex!{T}(m::ScoreModel{T}, c::Int,  ::T,          ::Type{GAP}) = m.char2gap = c
-setindex!{T}(m::ScoreModel{T}, c::Int,  ::Type{GAP},  ::T        ) = m.gap2char = c
-setindex!{T}(m::ScoreModel{T}, c::Int, x::T,         y::T        ) = m.score[convert(UInt8,x)+1,convert(UInt8,y)+1] = c
+setindex!{C}(m::ScoreModel{C}, s::Real,  ::Type{GAP}              ) = m.char2gap = m.gap2char = s
+setindex!{C}(m::ScoreModel{C}, s::Real,  ::C,          ::Type{GAP}) = m.char2gap = s
+setindex!{C}(m::ScoreModel{C}, s::Real,  ::Type{GAP},  ::C        ) = m.gap2char = s
+setindex!{C}(m::ScoreModel{C}, s::Real, x::C,         y::C        ) = m.score[convert(UInt8,x)+1,convert(UInt8,y)+1] = s
 
 # PAM, BLOSUM, etc.

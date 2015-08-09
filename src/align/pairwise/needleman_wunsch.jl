@@ -12,9 +12,12 @@ type NeedlemanWunsch{T} <: PairwiseAlignmentAlgorithm
     matrix::DPMatrix{T}
 end
 
-function call(::Type{NeedlemanWunsch})
-    matrix = DPMatrix{Int}()
-    NeedlemanWunsch(matrix)
+function call{T}(::Type{NeedlemanWunsch{T}})
+    NeedlemanWunsch(DPMatrix{T}())
+end
+
+function call{T}(::Type{NeedlemanWunsch}, ::Union{AbstractScoreModel{T},AbstractCostModel{T}})
+    NeedlemanWunsch(DPMatrix{T}())
 end
 
 function score!(nw::NeedlemanWunsch, a, p, m, b, q, n, score::AbstractScoreModel, linear_space=true)

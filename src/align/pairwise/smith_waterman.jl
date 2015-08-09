@@ -17,9 +17,12 @@ type SmithWaterman{T} <: PairwiseAlignmentAlgorithm
     end
 end
 
-function call(::Type{SmithWaterman})
-    matrix = DPMatrix{Int}()
-    SmithWaterman{Int}(matrix)
+function call{T}(::Type{SmithWaterman{T}})
+    SmithWaterman{T}(DPMatrix{T}())
+end
+
+function call{T}(::Type{SmithWaterman}, ::AbstractScoreModel{T})
+    SmithWaterman{T}(DPMatrix{T}())
 end
 
 function score!(sw::SmithWaterman, a, p, m, b, q, n, score)

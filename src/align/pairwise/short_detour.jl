@@ -14,9 +14,12 @@ end
 
 immutable AbberationError <: Exception; end
 
-function call(::Type{ShortDetour})
-    matrix = DPMatrix{Int}()
-    ShortDetour(matrix)
+function call{T}(::Type{ShortDetour{T}})
+    ShortDetour(DPMatrix{T}())
+end
+
+function call{T}(::Type{ShortDetour}, ::AbstractCostModel{T})
+    ShortDetour(DPMatrix{T}())
 end
 
 function distance!(sd::ShortDetour, a, p, m, b, q, n, cost::AbstractCostModel)

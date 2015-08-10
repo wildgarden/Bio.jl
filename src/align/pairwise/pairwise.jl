@@ -1,7 +1,15 @@
 abstract PairwiseAlignmentAlgorithm
 
+function score(a, b)
+    return score!(NeedlemanWunsch(UnitScore), a, b)
+end
+
 function score!(alg::PairwiseAlignmentAlgorithm, a, b)
     return score!(alg, a, 1, length(a), b, 1, length(b))
+end
+
+function distance(a, b)
+    return distance!(NeedlemanWunsch(UnitCost), a, b)
 end
 
 function distance!(alg::PairwiseAlignmentAlgorithm, a, b)

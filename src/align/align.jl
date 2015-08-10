@@ -5,6 +5,8 @@ export
     GAP,
     distance, distance!,
     UnitScore,
+    ScoreModel,
+    AffineScoreModel,
     BLOSUM62,
     UnitCost,
     CostModel,
@@ -13,6 +15,7 @@ export
     NeedlemanWunsch,
     ShortDetour,
     SmithWaterman,
+    Gotoh,
     SemiGlobal
 
 import Base:
@@ -29,6 +32,7 @@ import Base:
 
 using Bio.Seq
 
+include("substition_matrix.jl")
 include("model.jl")
 include("pairwise/pairwise.jl")
 

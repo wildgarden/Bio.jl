@@ -20,7 +20,7 @@ type ScoreModel{C<:Character,T} <: AbstractLinearGapModel{T}
         new(zeros(T, alphabetsize, alphabetsize), 0, 0)
     end
     function ScoreModel(sm::SubstitutionMatrix{C,T}, char2gap, gap2char)
-        new(sm.score, char2gap, gap2char)
+        new(copy(sm.score), char2gap, gap2char)
     end
 end
 
@@ -41,7 +41,7 @@ type AffineScoreModel{C<:Character,T} <: AbstractScoreModel{T}
     β::T  # penalty for extending a gap
 end
 
-call{C,T}(::Type{AffineScoreModel{C}}, score::AbstractMatrix{T}, α, β) = AffineScoreModel{C,T}(score, α, β)
+call{C,T}(::Type{AffineScoreModel{C}}, score::AbstractMatrix{T}, α, β) = AffineScoreModel{C,T}(copy(score), α, β)
 
 getindex{C}(m::AffineScoreModel{C}, x::C, y::C) = m.score[convert(UInt8,x)+1,convert(UInt8,y)+1]
 setindex!{C}(m::AffineScoreModel{C}, s::Real, x::C, y::C) = m.score[convert(UInt8,x)+1,convert(UInt8,y)+1] = s

@@ -2,6 +2,8 @@
 # -----------------
 #
 # Gotoh's alignment algorithm for affine gap scores.
+#
+# Gotoh, Osamu. "An improved algorithm for matching biological sequences." Journal of molecular biology 162.3 (1982): 705-708.
 
 type Gotoh{M<:AffineScoreModel,T<:Real} <: PairwiseAlignmentAlgorithm
     model::M

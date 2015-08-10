@@ -1,10 +1,10 @@
 abstract PairwiseAlignmentAlgorithm
 
-function score!{A<:PairwiseAlignmentAlgorithm}(alg::A, a, b)
+function score!(alg::PairwiseAlignmentAlgorithm, a, b)
     return score!(alg, a, 1, length(a), b, 1, length(b))
 end
 
-function distance!{A<:PairwiseAlignmentAlgorithm}(alg::A, a, b)
+function distance!(alg::PairwiseAlignmentAlgorithm, a, b)
     return distance!(alg, a, 1, length(a), b, 1, length(b))
 end
 

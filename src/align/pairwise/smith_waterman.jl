@@ -8,35 +8,30 @@
 # space: O(m*n)
 
 
-type SmithWaterman{T} <: PairwiseAlignmentAlgorithm
+type SmithWaterman{M<:AbstractScoreModel,T<:Real} <: PairwiseAlignmentAlgorithm
+    model::M
     matrix::DPMatrix{T}
     max_score::T
     max_score_loc::Tuple{Int,Int}
-    function SmithWaterman(matrix)
-        new(matrix)
-    end
 end
 
-function call{T}(::Type{SmithWaterman{T}})
-    SmithWaterman{T}(DPMatrix{T}())
+function call{T}(::Type{SmithWaterman}, model::AbstractScoreModel{T})
+    SmithWaterman(model, DPMatrix{T}(), zero(T), (0, 0))
 end
 
-function call{T}(::Type{SmithWaterman}, ::AbstractScoreModel{T})
-    SmithWaterman{T}(DPMatrix{T}())
-end
-
-function score!(sw::SmithWaterman, a, p, m, b, q, n, score)
-    align!(sw, a, p, m, b, q, n, score)
+function score!(sw::SmithWaterman, a, p, m, b, q, n)
+    dp!(sw, a, p, m, b, q, n)
     return sw.max_score
 end
 
-function align!(sw::SmithWaterman, a, p, m, b, q, n, score::AbstractScoreModel)
+function dp!(sw::SmithWaterman, a, p, m, b, q, n)
+    score = sw.model
     mtx = sw.matrix
     fitsize!(mtx, m, n)
     mtx[0,0] = 0
     max_score = mtx[0,0]
     max_score_loc = (0, 0)
-    # assuming the GAP score is non-positiev
+    # assuming the GAP score is non-positive
     for i in 1:m
         mtx[i,0] = 0
     end

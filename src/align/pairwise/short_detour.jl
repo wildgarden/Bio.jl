@@ -8,25 +8,22 @@
 # * space: O(m*n) (TODO: improve)
 
 
-type ShortDetour{T} <: PairwiseAlignmentAlgorithm
+type ShortDetour{M<:AbstractCostModel,T<:Real} <: PairwiseAlignmentAlgorithm
+    model::M
     matrix::DPMatrix{T}
+end
+
+function call{T}(::Type{ShortDetour}, model::AbstractCostModel{T})
+    ShortDetour(model, DPMatrix{T}())
 end
 
 immutable AbberationError <: Exception; end
 
-function call{T}(::Type{ShortDetour{T}})
-    ShortDetour(DPMatrix{T}())
-end
-
-function call{T}(::Type{ShortDetour}, ::AbstractCostModel{T})
-    ShortDetour(DPMatrix{T}())
-end
-
-function distance!(sd::ShortDetour, a, p, m, b, q, n, cost::AbstractCostModel)
+function distance!(sd::ShortDetour, a, p, m, b, q, n)
     t = 1
     while true
         try
-            dp!(sd, a, p, m, b, q, n, t, cost)
+            dp!(sd, a, p, m, b, q, n, t)
         catch ex
             if isa(ex, AbberationError)
                 # double threshold of aberration
@@ -40,9 +37,8 @@ function distance!(sd::ShortDetour, a, p, m, b, q, n, cost::AbstractCostModel)
     return sd.matrix[end,end]
 end
 
-# TODO: score
-
-function dp!{T}(sd::ShortDetour{T}, a, p, m, b, q, n, t::T, cost::AbstractCostModel)
+function dp!{M,T}(sd::ShortDetour{M,T}, a, p, m, b, q, n, t::T)
+    cost = sd.model
     mtx = sd.matrix
     fitsize!(mtx, m, n)
     # TODO: remove this restriction

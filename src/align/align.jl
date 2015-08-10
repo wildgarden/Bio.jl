@@ -19,12 +19,14 @@ export
     PAM70,
     PAM250,
     score, score!,
-    # algorithms
+    # pairwise alignment algorithms
     NeedlemanWunsch,
     ShortDetour,
     SmithWaterman,
     Gotoh,
-    SemiGlobal
+    SemiGlobal,
+    # multiple alignment algorithms
+    CenterStar
 
 import Base:
     getindex,
@@ -43,5 +45,6 @@ using Bio.Seq
 include("substition_matrix.jl")
 include("model.jl")
 include("pairwise/pairwise.jl")
+include("multiple/multiple.jl")
 
 end

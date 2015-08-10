@@ -12,12 +12,12 @@
 # * Sankoff, David. "Matching sequences under deletion/insertion constraints." Proceedings of the National Academy of Sciences 69.1 (1972): 4-6.
 
 
-type NeedlemanWunsch{M<:Union{AbstractScoreModel,AbstractCostModel},T<:Real} <: PairwiseAlignmentAlgorithm
+type NeedlemanWunsch{M<:Union{AbstractLinearGapModel,AbstractCostModel},T<:Real} <: PairwiseAlignmentAlgorithm
     model::M
     matrix::DPMatrix{T}
 end
 
-function call{T}(::Type{NeedlemanWunsch}, model::Union{AbstractScoreModel{T},AbstractCostModel{T}})
+function call{T}(::Type{NeedlemanWunsch}, model::Union{AbstractLinearGapModel{T},AbstractCostModel{T}})
     NeedlemanWunsch(model, DPMatrix{T}())
 end
 
@@ -40,7 +40,7 @@ function distance!(nw::NeedlemanWunsch, a, p, m, b, q, n, linear_space=true)
 end
 
 @generated function dp!{M}(nw::NeedlemanWunsch{M}, a, p, m, b, q, n)
-    if M <: AbstractScoreModel
+    if M <: AbstractLinearGapModel
         f = :max
     elseif M <: AbstractCostModel
         f = :min
@@ -70,7 +70,7 @@ end
 end
 
 @generated function linear_dp!{M}(nw::NeedlemanWunsch{M}, a, p, m, b, q, n)
-    if M <: AbstractScoreModel
+    if M <: AbstractLinearGapModel
         f = :max
     elseif M <: AbstractCostModel
         f = :min

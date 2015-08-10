@@ -3,14 +3,16 @@ abstract AlignmentModel
 # score model is a maximizing problem
 abstract AbstractScoreModel{T<:Real} <: AlignmentModel
 
-immutable UnitScoreModel{T} <: AbstractScoreModel{T}; end
+abstract AbstractLinearGapModel{T} <: AbstractScoreModel{T}
+
+immutable UnitScoreModel{T} <: AbstractLinearGapModel{T}; end
 const UnitScore = UnitScoreModel{Int}()
 
 getindex{T}(::UnitScoreModel{T},  ::Character,  ::Type{GAP}) = T(-1)
 getindex{T}(::UnitScoreModel{T},  ::Type{GAP},  ::Character) = T(-1)
 getindex{T}(::UnitScoreModel{T}, x::Character, y::Character) = ifelse(x === y, T(1), T(-1))
 
-type ScoreModel{C<:Character,T} <: AbstractScoreModel{T}
+type ScoreModel{C<:Character,T} <: AbstractLinearGapModel{T}
     score::Matrix{T}
     char2gap::T
     gap2char::T

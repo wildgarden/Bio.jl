@@ -8,14 +8,14 @@
 # space: O(m*n)
 
 
-type SmithWaterman{M<:AbstractScoreModel,T<:Real} <: PairwiseAlignmentAlgorithm
+type SmithWaterman{M<:AbstractLinearGapModel,T<:Real} <: PairwiseAlignmentAlgorithm
     model::M
     matrix::DPMatrix{T}
     max_score::T
     max_score_loc::Tuple{Int,Int}
 end
 
-function call{T}(::Type{SmithWaterman}, model::AbstractScoreModel{T})
+function call{T}(::Type{SmithWaterman}, model::AbstractLinearGapModel{T})
     SmithWaterman(model, DPMatrix{T}(), zero(T), (0, 0))
 end
 

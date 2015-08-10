@@ -4,10 +4,11 @@ export
     align,
     GAP,
     distance, distance!,
+    UnitScore,
+    BLOSUM62,
     UnitCost,
     CostModel,
     score, score!,
-    UnitScore,
     # algorithms
     NeedlemanWunsch,
     ShortDetour,

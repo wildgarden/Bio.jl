@@ -12,7 +12,7 @@ const UnitScore = UnitScoreModel{Int}()
 
 getindex{T}(::UnitScoreModel{T},  ::Character,  ::Type{GAP}) = T(-1)
 getindex{T}(::UnitScoreModel{T},  ::Type{GAP},  ::Character) = T(-1)
-getindex{T}(::UnitScoreModel{T}, x::Character, y::Character) = ifelse(x === y, T(1), T(0))
+getindex{T}(::UnitScoreModel{T}, x::Character, y::Character) = ifelse(x === y, T(1), T(-1))
 
 type ScoreModel{C<:Character,T} <: AbstractScoreModel
     score::Matrix{T}

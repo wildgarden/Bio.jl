@@ -66,7 +66,7 @@ function dp!{M,T}(sd::ShortDetour{M,T}, a, p, m, b, q, n, t::T)
             if i != l
                 c = min(c, mtx[i-1,j] + cost[a[i+p-1],GAP])
             end
-            if i != u
+            if i != u || j - 1 + x ≥ m
                 c = min(c, mtx[i,j-1] + cost[GAP,b[j+q-1]])
             end
             min_cost = min(min_cost, c)

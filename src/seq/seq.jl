@@ -4,7 +4,7 @@ using Compat
 using Base.Intrinsics
 
 import Base: convert, complement, show, length, start, next, done, copy,
-             reverse, show, endof, isless, clipboard, parse, repeat,
+             reverse, show, endof, isless, clipboard, parse, tryparse, repeat,
              unsafe_copy!, read, read!,
              # operators
              getindex, setindex!, ==, *, ^, |, &

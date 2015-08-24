@@ -147,7 +147,12 @@ function parse(::Type{AminoAcid}, s::String)
     end
 end
 
-# TODO: tryparse
+function tryparse(::Type{AminoAcid}, s::AbstractString)
+    try
+        return Nullable(parse(AminoAcid, s))
+    end
+    return Nullable{AminoAcid}()
+end
 
 # Amino Acids Sequences
 # =====================

@@ -12,14 +12,24 @@
 # * Sankoff, David. "Matching sequences under deletion/insertion constraints." Proceedings of the National Academy of Sciences 69.1 (1972): 4-6.
 
 
-type NeedlemanWunsch{M<:Union{AbstractLinearGapModel,AbstractCostModel},T<:Real} <: PairwiseAlignmentAlgorithm
+type NeedlemanWunsch{M<:Union{AbstractLinearGapModel,AbstractCostModel},T<:Real, S} <: PairwiseAlignmentAlgorithm
     model::M
     matrix::DPMatrix{T}
+    trace_matrix::DPMatrix{S}
 end
 
 function call{T}(::Type{NeedlemanWunsch}, model::Union{AbstractLinearGapModel{T},AbstractCostModel{T}})
-    NeedlemanWunsch(model, DPMatrix{T}())
+    NeedlemanWunsch(model, DPMatrix{T}(), DPMatrix{Array{Array{Int64,1}}}())
 end
+
+# Conventions of variables:
+#   a: sequence A
+#   b: sequence B
+#   m: aligned length of sequence A
+#   n: aligned length of sequence B
+#   p: start position of sequence A
+#   q: start position of sequence B
+# This means a[p:p+m-1] and b[q:q+n-1] are aligned to each other.
 
 function score!(nw::NeedlemanWunsch, a, p, m, b, q, n, linear_space=true)
     if linear_space
@@ -52,20 +62,110 @@ end
         mtx = nw.matrix
         fitsize!(mtx, m, n)
         mtx[0,0] = 0
-        for i in 1:m
-            mtx[i,0] = mtx[i-1,0] + model[a[i+p-1],GAP]
-        end
-        for j in 1:n
-            mtx[0,j] = mtx[0,j-1] + model[GAP,b[j+q-1]]
-            for i in 1:m
-                mtx[i,j] = $f(
-                    mtx[i-1,j-1] + model[a[i+p-1],b[j+q-1]],
-                    mtx[i-1,j  ] + model[a[i+p-1],GAP     ],
-                    mtx[i,  j-1] + model[GAP,     b[j+q-1]]
-                )
+
+        mtx_path = nw.trace_matrix
+        fitsize!(mtx_path, m, n)
+
+        fill!(mtx_path, collect([]))
+        for i in 0:m
+            for j in 0:n
+                mtx_path[i,j,0] = []
             end
         end
+        push!(mtx_path[0,0,0],[0,0])
+
+        for i in 1:m
+            mtx[i,0] = mtx[i-1,0] + model[a[i+p-1],GAP]
+            push!(mtx_path[i,0], [i-1,0])
+        end
+
+        for j in 1:n
+            mtx[0,j] = mtx[0,j-1] + model[GAP,b[j+q-1]]
+            push!(mtx_path[0,j], [0,j-1])
+            for i in 1:m
+                diagonal = mtx[i-1,j-1] + model[a[i+p-1],b[j+q-1]]
+                top      = mtx[i-1,j  ] + model[a[i+p-1],GAP     ]
+                left     = mtx[i,  j-1] + model[GAP,     b[j+q-1]]
+
+                mtx[i,j] = $f(diagonal, top, left)
+
+                for (idx, val) in enumerate([diagonal, top, left])
+                    if val == mtx[i, j]
+                        if idx == 1 #diag
+                            push!(mtx_path[i,j], [i-1,j-1])
+                        elseif idx == 2 # top
+                            push!(mtx_path[i,j], [i-1,j])
+                        else # left
+                            push!(mtx_path[i,j], [i,j-1])
+                        end
+                    end
+                end
+            end
+        end
+
         return nw
+    end
+end
+
+
+"""
+finds one optimal alignment for the given sequences
+please note: for the given sequences more than optimal alignment may exist. This function returns only one.
+"""
+function backtrackSingle(nw::NeedlemanWunsch, seq_a, p::Int, seq_b, q::Int)
+    align_a = ""
+    align_b = ""
+
+    i = length(seq_a)
+    j = length(seq_b)
+
+    while i > 0 || j > 0
+        if i > 0 && j > 0 && nw.matrix[i, j] == (nw.matrix[i - 1, j - 1] + nw.model[seq_a[i + p - 1], seq_b[j + q - 1]])
+            align_a *= string(seq_a[i + p - 1])
+            align_b *= string(seq_b[j + q - 1])
+            i -= 1
+            j -= 1
+        elseif i > 0 && nw.matrix[i, j] == (nw.matrix[i - 1, j] + nw.model[seq_a[i + p - 1], GAP])
+            align_a *= string(seq_a[i + p - 1])
+            align_b *= string("-")
+            i -= 1
+        else
+            align_a *= string("-")
+            align_b *= string(seq_b[j + q - 1])
+            j -= 1
+        end
+    end
+
+    return (reverse(align_a), reverse(align_b))
+end
+
+
+"""
+Recursive backtracking returns all optimal alignments.
+Parameter `result` contains all optimals alignments when function returns. Other params are unchanged.
+"""
+function backtrackAll!(nw::NeedlemanWunsch, result, row, col, seq_a_orig, seq_b_orig, seq_a_aligned = "", seq_b_aligned = "")
+    if row == 0 && col == 0
+        push!(result,(reverse(seq_a_aligned), reverse(seq_b_aligned)))
+    else
+        if length(nw.trace_matrix[row,col]) > 0
+            for (i,j) in nw.trace_matrix[row,col]
+                if i == (row - 1) && j == col # top
+                    seq_a = string(seq_a_aligned, seq_a_orig[row])
+                    seq_b = string(seq_b_aligned, '-')
+                elseif i == (row - 1) && j == (col -1) # diagonal
+                    seq_a = string(seq_a_aligned, seq_a_orig[row])
+                    seq_b = string(seq_b_aligned, seq_b_orig[col])
+                else # left
+                    seq_a = string(seq_a_aligned, '-')
+                    seq_b = string(seq_b_aligned, seq_b_orig[col])
+                end
+
+                backtrackAll!(nw, result, i, j, seq_a_orig, seq_b_orig, seq_a, seq_b)
+            end
+        else
+            error("empty path in $row, $col")
+        end
     end
 end
 

@@ -19,7 +19,7 @@ end
 
 immutable AbberationError <: Exception; end
 
-function distance!(sd::ShortDetour, a, p, m, b, q, n)
+function distance!(sd::ShortDetour, a, p, m, b, q, n,linear_space=true)
     t = 1
     while true
         try

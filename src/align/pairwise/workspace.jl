@@ -19,6 +19,9 @@ end
 
 size(m::DPMatrix) = (m.nrows, m.ncols)
 
+getindex(m::DPMatrix, i::Integer, j::Integer, k::Integer) = m.data[i+1,j+1,k+1]
+setindex!(m::DPMatrix, x, i::Integer, j::Integer, k::Integer) = m.data[i+1,j+1,k+1] = x
+
 getindex(m::DPMatrix, i::Integer, j::Integer) = m.data[i+1,j+1]
 setindex!(m::DPMatrix, x, i::Integer, j::Integer) = m.data[i+1,j+1] = x
 

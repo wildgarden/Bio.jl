@@ -2,6 +2,7 @@ module Align
 
 export
     align,
+    alignAll,
     GAP,
     distance, distance!,
     UnitScore,
@@ -45,6 +46,7 @@ using Bio.Seq
 include("substition_matrix.jl")
 include("model.jl")
 include("pairwise/pairwise.jl")
+include("multiple/model.jl")
 include("multiple/multiple.jl")
 
 end
